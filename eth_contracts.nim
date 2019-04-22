@@ -267,27 +267,23 @@ proc getBlockTimestamp*(): int64
 proc callDataCopy*[T](res: var T, offset: int) {.inline.} =
   callDataCopy(addr res, offset.int32, sizeof(res).int32)
 
-proc storageLoad*[N](path: array[N, byte], res: pointer) {.inline.} =
+proc storageLoad*[N](path: array[N, byte], res: var array[32, byte]) {.inline.} =
   when path.len < 32:
-    type PaddedPath {.packed.} = object
-      padding: array[32 - path.len, byte]
-      p: array[N, byte]
-    var p: PaddedPath
-    p.p = path
-    storageLoad(addr p, res)
+    var padded {.noinit.}: array[32, byte]
+    copyMem(addr padded[0], unsafeAddr path, path.len)
+    zeroMem(addr padded[path.len], padded.len - path.len)
+    storageLoad(addr padded, addr res[0])
   else:
-    storageLoad(unsafeAddr path[0], res)
+    storageLoad(unsafeAddr path[0], addr res[0])
 
-proc storageStore*[N](path: array[N, byte], res: pointer) {.inline.} =
+proc storageStore*[N](path: array[N, byte], res: array[32, byte]) {.inline.} =
   when path.len < 32:
-    type PaddedPath {.packed.} = object
-      padding: array[32 - path.len, byte]
-      p: array[N, byte]
-    var p: PaddedPath
-    p.p = path
-    storageStore(addr p, res)
+    var padded {.noinit.}: array[32, byte]
+    copyMem(addr padded[0], unsafeAddr path, path.len)
+    zeroMem(addr padded[path.len], padded.len - path.len)
+    storageStore(addr padded, unsafeAddr res)
   else:
-    storageStore(unsafeAddr path[0], res)
+    storageStore(unsafeAddr path[0], unsafeAddr res)
 
 macro exportwasm*(p: untyped): untyped =
   expectKind(p, nnkProcDef)
