@@ -31,7 +31,7 @@ proc do_balance() =
     revert(nil, 0)
 
   var address{.noinit.}: array[32, byte]
-  callDataCopy(addr address, 4, 20)
+  callDataCopy(address, 4, 20)
 
   var balance{.noinit.}: array[32, byte]
   storageLoad(address, balance)
@@ -41,10 +41,10 @@ proc do_transfer() =
   if getCallDataSize() != 32:
     revert(nil, 0)
 
-  var sender{.noinit.}: array[20, byte]
-  getCaller(addr sender)
-  var recipient{.noinit.}: array[20, byte]
-  callDataCopy(recipient, 4)
+  var sender{.noinit.}: array[32, byte]
+  getCaller(sender)
+  var recipient{.noinit.}: array[32, byte]
+  callDataCopy(recipient, 4, 20)
   var value: array[8, byte]
   callDataCopy(value, 24)
 

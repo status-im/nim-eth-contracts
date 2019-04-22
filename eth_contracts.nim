@@ -267,6 +267,16 @@ proc getBlockTimestamp*(): int64
 proc callDataCopy*[T](res: var T, offset: int) {.inline.} =
   callDataCopy(addr res, offset.int32, sizeof(res).int32)
 
+proc callDataCopy*[N](res: var array[N, byte], offset: int, bytes: int) {.inline.} =
+  ## copy bytes from calldata, zeroing out the rest of the array
+  callDataCopy(addr res[0], offset.int32, res.len.int32)
+  zeroMem(addr res[bytes], res.len - bytes)
+
+proc getCaller*[N](res: var array[N, byte]) {.inline.} =
+  ## copy caller, zeroing out the rest of the array
+  getCaller(addr res[0])
+  zeroMem(addr res[20], res.len - 20)
+
 proc storageLoad*[N](path: array[N, byte], res: var array[32, byte]) {.inline.} =
   when path.len < 32:
     var padded {.noinit.}: array[32, byte]
