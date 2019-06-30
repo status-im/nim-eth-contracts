@@ -6,25 +6,20 @@
 
 import ../eth_contracts
 
-proc bigEndian64*(inp: pointer): uint64 =
-  # If we turn on the llvm inliner, it will inline calls to the bswap intrinsic
-  # causing a code size explosion - looks like for the wasm target, it doesn't
-  # count expansion that's done due to the lack of a bswap instruction.
-  # As a workaround, one needs to make sure that inlining is disabled when
-  # compiling with llvm / clang!
-  # Also as a workaround, we do a special version of bigEndian64 here that
-  # avoids some random calls that are generally needed for byte alignment but
-  # can be avoided here..
-  # TODO report upstream
-  var x = cast[ptr uint64](inp)[]
-
-  x = (x and 0x00000000FFFFFFFF'u64) shl 32'u64 or (x and 0xFFFFFFFF00000000'u64) shr 32'u64
+proc bigEndian64*(x: uint64): uint64 {.noinline.} =
+  # If we use inliner or enable the bswap intrinsic, code size explodes as wasm
+  # lacks a bswap instruction
+  var x = (x and 0x00000000FFFFFFFF'u64) shl 32'u64 or (x and 0xFFFFFFFF00000000'u64) shr 32'u64
   x = (x and 0x0000FFFF0000FFFF'u64) shl 16'u64 or (x and 0xFFFF0000FFFF0000'u64) shr 16'u64
   x = (x and 0x00FF00FF00FF00FF'u64) shl 8'u64  or (x and 0xFF00FF00FF00FF00'u64) shr 8'u64
   x
 
 template bigEndian64*(v: uint64, outp: var openArray[byte]) =
-  cast[ptr uint64](addr outp[0])[] = bigEndian64(unsafeAddr v)
+  cast[ptr uint64](addr outp[0])[] = bigEndian64(v)
+
+template bigEndian64*[N: static int](v: array[N, byte]): uint64 =
+  static: assert N >= sizeof(uint64)
+  bigEndian64(cast[ptr uint64](addr v[0])[])
 
 proc do_balance() =
   if getCallDataSize() != 24:
@@ -54,20 +49,20 @@ proc do_transfer() =
   storageLoad(recipient, recipientBalance)
 
   var
-    sb = bigEndian64(addr senderBalance)
-    v = bigEndian64(addr value)
+    sb = bigEndian64(senderBalance)
+    v = bigEndian64(value)
 
   if sb < v:
     revert(nil, 0)
 
   var
-    rb = bigEndian64(addr recipientBalance)
+    rb = bigEndian64(recipientBalance)
 
   sb -= v
   rb += v # TODO there's an overflow possible here..
 
   bigEndian64(sb, senderBalance)
-  bigEndian64(sb, recipientBalance)
+  bigEndian64(rb, recipientBalance)
 
   storageStore(sender, senderBalance)
   storageStore(recipient, recipientBalance)
