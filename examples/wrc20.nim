@@ -39,21 +39,25 @@ proc do_transfer() =
   var
     sender{.noinit.}: array[32, byte]
     senderBalance{.noinit.}: array[32, byte]
-    value{.noinit.}: array[8, byte]
-    recipient{.noinit.}: array[32, byte]
-    recipientBalance{.noinit.}: array[32, byte]
 
   getCaller(sender)
   storageLoad(sender, senderBalance)
 
-  callDataCopy(value, 24)
-
   var
     sb = bigEndian64(senderBalance)
-    v = bigEndian64(value)
+    v = bigEndian64(uint64.callDataCopy(24))
 
   if sb < v:
     revert(nil, 0)
+
+  sb -= v
+
+  bigEndian64(sb, senderBalance)
+  storageStore(sender, senderBalance)
+
+  var
+    recipient{.noinit.}: array[32, byte]
+    recipientBalance{.noinit.}: array[32, byte]
 
   callDataCopy(recipient, 4, 20)
   storageLoad(recipient, recipientBalance)
@@ -61,11 +65,7 @@ proc do_transfer() =
   var
     rb = bigEndian64(recipientBalance)
 
-  sb -= v
   rb += v # TODO there's an overflow possible here..
-
-  bigEndian64(sb, senderBalance)
-  storageStore(sender, senderBalance)
 
   bigEndian64(rb, recipientBalance)
   storageStore(recipient, recipientBalance)
@@ -73,9 +73,8 @@ proc do_transfer() =
 proc main() {.exportwasm.} =
   if getCallDataSize() < 4:
     revert(nil, 0)
-  var selector: uint32
-  callDataCopy(selector, 0)
-  case selector
+
+  case uint32.callDataCopy(0)
   of 0x1a029399'u32:
     do_balance()
   of 0xbd9f355d'u32:

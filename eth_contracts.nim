@@ -267,7 +267,7 @@ proc getBlockTimestamp*(): int64
 proc callDataCopy*[T](res: var T, offset: int) {.inline.} =
   callDataCopy(addr res, offset.int32, sizeof(res).int32)
 
-proc callDataCopy*(T: type, offset: int): T {.inline.} =
+proc callDataCopy*(T: type, offset: int): T {.inline, noinit.} =
   callDataCopy(addr result, offset.int32, sizeof(T).int32)
 
 proc callDataCopy*[N](res: var array[N, byte], offset: int, bytes: int) {.inline.} =
