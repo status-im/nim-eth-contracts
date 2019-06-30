@@ -17,7 +17,7 @@ wrc20.wasm: wrc20.nim
 	nlvm c $(NFLAGS) -d:release --opt:size wrc20
 
 wrc20opt.ll: wrc20.ll
-	$(L)/opt -O2 -disable-inlining wrc20.ll | $(L)/llvm-dis > wrc20opt.ll
+	$(L)/opt -Oz wrc20.ll | $(L)/llvm-dis > wrc20opt.ll
 
 .PHONY: clean
 clean:

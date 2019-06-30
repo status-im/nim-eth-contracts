@@ -9,9 +9,9 @@ import ../eth_contracts
 proc bigEndian64*(x: uint64): uint64 {.noinline.} =
   # If we use inliner or enable the bswap intrinsic, code size explodes as wasm
   # lacks a bswap instruction
-  var x = (x and 0x00000000FFFFFFFF'u64) shl 32'u64 or (x and 0xFFFFFFFF00000000'u64) shr 32'u64
-  x = (x and 0x0000FFFF0000FFFF'u64) shl 16'u64 or (x and 0xFFFF0000FFFF0000'u64) shr 16'u64
-  x = (x and 0x00FF00FF00FF00FF'u64) shl 8'u64  or (x and 0xFF00FF00FF00FF00'u64) shr 8'u64
+  var x = (x and 0x00000000FFFFFFFF'u64) shl 32 or (x and 0xFFFFFFFF00000000'u64) shr 32
+  x = (x and 0x0000FFFF0000FFFF'u64) shl 16 or (x and 0xFFFF0000FFFF0000'u64) shr 16
+  x = (x and 0x00FF00FF00FF00FF'u64) shl 8  or (x and 0xFF00FF00FF00FF00'u64) shr 8
   x
 
 template bigEndian64*(v: uint64, outp: var openArray[byte]) =
