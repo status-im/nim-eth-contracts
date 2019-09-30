@@ -3,7 +3,7 @@
 
 import ../eth_contracts
 
-proc bigEndian64*(x: uint64): uint64 =
+proc bigEndian64*(x: uint64): uint64 {.noinline.} =
   var x = (x and 0x00000000FFFFFFFF'u64) shl 32 or (x and 0xFFFFFFFF00000000'u64) shr 32
   x = (x and 0x0000FFFF0000FFFF'u64) shl 16 or (x and 0xFFFF0000FFFF0000'u64) shr 16
   x = (x and 0x00FF00FF00FF00FF'u64) shl 8  or (x and 0xFF00FF00FF00FF00'u64) shr 8
