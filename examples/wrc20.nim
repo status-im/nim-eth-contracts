@@ -1,7 +1,20 @@
 ## ewasm “WRC20” token contract coding challenge
 ## https://gist.github.com/axic/16158c5c88fbc7b1d09dfa8c658bc363
 
-import ../eth_contracts, stint, endians
+import ../eth_contracts
+
+proc bigEndian64*(x: uint64): uint64 =
+  var x = (x and 0x00000000FFFFFFFF'u64) shl 32 or (x and 0xFFFFFFFF00000000'u64) shr 32
+  x = (x and 0x0000FFFF0000FFFF'u64) shl 16 or (x and 0xFFFF0000FFFF0000'u64) shr 16
+  x = (x and 0x00FF00FF00FF00FF'u64) shl 8  or (x and 0xFF00FF00FF00FF00'u64) shr 8
+  x
+
+template bigEndian64*(v: uint64, outp: var openArray[byte]) =
+  cast[ptr uint64](addr outp[0])[] = bigEndian64(v)
+
+template bigEndian64*[N: static int](v: array[N, byte]): uint64 =
+  static: assert N >= sizeof(uint64)
+  bigEndian64(cast[ptr uint64](addr v[0])[])
 
 proc do_balance() =
   if getCallDataSize() != 24:
@@ -22,7 +35,7 @@ proc do_transfer() =
   getCaller(addr sender[0])
   var recipient: array[32, byte]
   callDataCopy(addr recipient, 4, 20)
-  var value: array[16, byte]
+  var value: array[8, byte]
   callDataCopy(addr value, 24, 8)
 
   var senderBalance: array[32, byte]
@@ -31,9 +44,9 @@ proc do_transfer() =
   storageLoad(recipient, addr recipientBalance)
 
   var
-    sb = readUintBE[128](senderBalance)
-    rb = readUintBE[128](recipientBalance)
-    v = readUintBE[128](value)
+    sb = bigEndian64(senderBalance)
+    rb = bigEndian64(recipientBalance)
+    v = bigEndian64(value)
 
   if sb < v:
     revert(nil, 0)
@@ -41,8 +54,8 @@ proc do_transfer() =
   sb -= v
   rb += v # TODO there's an overflow possible here..
 
-  senderBalance[0..14] = sb.toByteArrayBE()
-  recipientBalance[0..14] = rb.toByteArrayBE()
+  bigEndian64(sb, senderBalance)
+  bigEndian64(rb, recipientBalance)
 
   storageStore(sender, addr senderBalance)
   storageStore(recipient, addr recipientBalance)
