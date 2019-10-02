@@ -20,10 +20,11 @@ proc do_balance() =
   if getCallDataSize() != 24:
     revert(nil, 0)
 
-  var address: array[32, byte]
+  var address {.noinit.}: array[32, byte]
   callDataCopy(addr address, 4, 20)
+  zeroMem(addr address[20], 32 - 20)
 
-  var balance: array[32, byte]
+  var balance {.noinit.}: array[32, byte]
   storageLoad(address, addr balance)
   finish(addr balance, 8)
 
@@ -31,16 +32,18 @@ proc do_transfer() =
   if getCallDataSize() != 32:
     revert(nil, 0)
 
-  var sender: array[32, byte]
+  var sender {.noinit.}: array[32, byte]
   getCaller(addr sender[0])
-  var recipient: array[32, byte]
+  zeroMem(addr sender[20], 32 - 20)
+  var recipient {.noinit.}: array[32, byte]
   callDataCopy(addr recipient, 4, 20)
-  var value: array[8, byte]
+  zeroMem(addr recipient[20], 32 - 20)
+  var value {.noinit.}: array[8, byte]
   callDataCopy(addr value, 24, 8)
 
-  var senderBalance: array[32, byte]
+  var senderBalance {.noinit.}: array[32, byte]
   storageLoad(sender, addr senderBalance)
-  var recipientBalance: array[32, byte]
+  var recipientBalance {.noinit.}: array[32, byte]
   storageLoad(recipient, addr recipientBalance)
 
   var
@@ -63,7 +66,7 @@ proc do_transfer() =
 proc main() {.exportwasm.} =
   if getCallDataSize() < 4:
     revert(nil, 0)
-  var selector: uint32
+  var selector {.noinit.}: uint32
   callDataCopy(selector, 0)
   case selector
   of 0x1a029399'u32:
