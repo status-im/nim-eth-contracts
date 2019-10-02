@@ -17,9 +17,6 @@ template bigEndian64*[N: static int](v: array[N, byte]): uint64 =
   bigEndian64(cast[ptr uint64](addr v[0])[])
 
 proc do_balance() =
-  if getCallDataSize() != 24:
-    revert(nil, 0)
-
   var address {.noinit.}: array[32, byte]
   callDataCopy(addr address, 4, 20)
   zeroMem(addr address[20], 32 - 20)
@@ -29,9 +26,6 @@ proc do_balance() =
   finish(addr balance, 8)
 
 proc do_transfer() =
-  if getCallDataSize() != 32:
-    revert(nil, 0)
-
   var sender {.noinit.}: array[32, byte]
   getCaller(addr sender[0])
   zeroMem(addr sender[20], 32 - 20)
@@ -64,8 +58,6 @@ proc do_transfer() =
   storageStore(recipient, addr recipientBalance)
 
 proc main() {.exportwasm.} =
-  if getCallDataSize() < 4:
-    revert(nil, 0)
   var selector {.noinit.}: uint32
   callDataCopy(selector, 0)
   case selector
