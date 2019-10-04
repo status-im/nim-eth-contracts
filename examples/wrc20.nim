@@ -16,23 +16,17 @@ template bigEndian64*[N: static int](v: array[N, byte]): uint64 =
   static: assert N >= sizeof(uint64)
   bigEndian64(cast[ptr uint64](addr v[0])[])
 
-proc do_balance() =
-  var address {.noinit.}: array[32, byte]
+template do_balance() =
   callDataCopy(addr address, 4, 20)
-  zeroMem(addr address[20], 32 - 20)
-
-  var balance {.noinit.}: array[32, byte]
   storageLoad(address, addr balance)
   finish(addr balance, 8)
 
-proc do_transfer() =
-  var address {.noinit.}: array[32, byte]
-  getCaller(addr address[0])
-  zeroMem(addr address[20], 32 - 20)
+template do_transfer() =
+  getCaller(addr address)
+
   var value {.noinit.}: array[8, byte]
   callDataCopy(addr value, 24, 8)
 
-  var balance {.noinit.}: array[32, byte]
   storageLoad(address, addr balance)
 
   var
@@ -51,14 +45,22 @@ proc do_transfer() =
   storageLoad(address, addr balance)
 
   b = bigEndian64(balance)
+
   b += v # TODO there's an overflow possible here..
 
   bigEndian64(b, balance)
   storageStore(address, addr balance)
 
 proc main() {.exportwasm.} =
+  var
+    address {.noinit.}: array[32, byte]
+    balance {.noinit.}: array[32, byte]
+
+  zeroMem(addr address[20], 32 - 20)
+
   var selector {.noinit.}: uint32
   callDataCopy(selector, 0)
+
   case selector
   of 0x1a029399'u32:
     do_balance()
