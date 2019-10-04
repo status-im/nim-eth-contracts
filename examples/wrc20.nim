@@ -53,8 +53,8 @@ template do_transfer() =
 
 proc main() {.exportwasm.} =
   var
-    address {.noinit.}: array[32, byte]
     balance {.noinit.}: array[32, byte]
+    address {.noinit.}: array[32, byte]
 
   zeroMem(addr address[20], 32 - 20)
 
