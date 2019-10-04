@@ -26,36 +26,35 @@ proc do_balance() =
   finish(addr balance, 8)
 
 proc do_transfer() =
-  var sender {.noinit.}: array[32, byte]
-  getCaller(addr sender[0])
-  zeroMem(addr sender[20], 32 - 20)
-  var recipient {.noinit.}: array[32, byte]
-  callDataCopy(addr recipient, 4, 20)
-  zeroMem(addr recipient[20], 32 - 20)
+  var address {.noinit.}: array[32, byte]
+  getCaller(addr address[0])
+  zeroMem(addr address[20], 32 - 20)
   var value {.noinit.}: array[8, byte]
   callDataCopy(addr value, 24, 8)
 
-  var senderBalance {.noinit.}: array[32, byte]
-  storageLoad(sender, addr senderBalance)
-  var recipientBalance {.noinit.}: array[32, byte]
-  storageLoad(recipient, addr recipientBalance)
+  var balance {.noinit.}: array[32, byte]
+  storageLoad(address, addr balance)
 
   var
-    sb = bigEndian64(senderBalance)
-    rb = bigEndian64(recipientBalance)
+    b = bigEndian64(balance)
     v = bigEndian64(value)
 
-  if sb < v:
+  if b < v:
     revert(nil, 0)
 
-  sb -= v
-  rb += v # TODO there's an overflow possible here..
+  b -= v
 
-  bigEndian64(sb, senderBalance)
-  bigEndian64(rb, recipientBalance)
+  bigEndian64(b, balance)
+  storageStore(address, addr balance)
 
-  storageStore(sender, addr senderBalance)
-  storageStore(recipient, addr recipientBalance)
+  callDataCopy(addr address, 4, 20)
+  storageLoad(address, addr balance)
+
+  b = bigEndian64(balance)
+  b += v # TODO there's an overflow possible here..
+
+  bigEndian64(b, balance)
+  storageStore(address, addr balance)
 
 proc main() {.exportwasm.} =
   var selector {.noinit.}: uint32
